@@ -1,0 +1,11 @@
+# Her
+
+Her is a home assistant.
+
+Supported conf:
+
+```
+[general]
+
+[alarms]
+```
