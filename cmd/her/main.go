@@ -26,7 +26,8 @@ func main() {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
-	messagesCh := make(chan mqtt.Message)
+	messagesToBotCh := make(chan mqtt.Message)
+	messagesFromBotCh := make(chan mqtt.Message)
 
 	var wg sync.WaitGroup
 
@@ -35,7 +36,7 @@ func main() {
 	go func() {
 		log.Info("Initializing mqtt")
 		defer wg.Done()
-		m, err = mqtt.NewClient("tcp://192.168.0.100:1883", messagesCh)
+		m, err = mqtt.NewClient("tcp://192.168.0.100:1883", messagesFromBotCh, messagesToBotCh)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -46,7 +47,7 @@ func main() {
 	go func() {
 		log.Info("Initializing bot")
 		defer wg.Done()
-		b, err = bot.NewBot(messagesCh)
+		b, err = bot.NewBot(messagesFromBotCh, messagesToBotCh)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -60,7 +61,8 @@ func main() {
 		if err := m.Stop(); err != nil {
 			log.Error(err)
 		}
-		close(messagesCh)
+		close(messagesToBotCh)
+		close(messagesFromBotCh)
 		quit <- true
 	}()
 

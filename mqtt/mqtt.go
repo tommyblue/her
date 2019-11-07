@@ -11,6 +11,7 @@ type Client struct {
 	mqttClient MQTT.Client
 	topics     []string
 	outCh      chan Message
+	inCh       chan Message
 }
 
 type Message struct {
@@ -18,11 +19,12 @@ type Message struct {
 	Message []byte
 }
 
-func NewClient(brokerUrl string, outCh chan Message) (*Client, error) {
+func NewClient(brokerUrl string, inCh, outCh chan Message) (*Client, error) {
 	opts := MQTT.NewClientOptions().AddBroker(brokerUrl)
 	opts.SetClientID("her")
 
 	client := &Client{
+		inCh:       inCh,
 		outCh:      outCh,
 		mqttClient: MQTT.NewClient(opts),
 	}
@@ -39,6 +41,14 @@ func (c *Client) Connect() error {
 		return errors.New("MQTT Client is disconnected")
 	}
 
+	go func() {
+		for msg := range c.inCh {
+			if err := c.Publish(msg); err != nil {
+				log.Error(err)
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -51,8 +61,15 @@ func (c *Client) Subscribe(topic string) error {
 	return nil
 }
 
+func (c *Client) Publish(msg Message) error {
+	token := c.mqttClient.Publish(msg.Topic, 0, true, msg.Message)
+	token.Wait()
+	return token.Error()
+}
+
 func (c *Client) Stop() error {
 	log.Info("Stopping mqtt")
+
 	for _, topic := range c.topics {
 		if token := c.mqttClient.Unsubscribe(topic); token.Wait() && token.Error() != nil {
 			return token.Error()

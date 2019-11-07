@@ -15,9 +15,10 @@ type Bot struct {
 	token  string
 	stopCh chan bool
 	inCh   chan mqtt.Message
+	outCh  chan mqtt.Message
 }
 
-func NewBot(inCh chan mqtt.Message) (*Bot, error) {
+func NewBot(outCh, inCh chan mqtt.Message) (*Bot, error) {
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 	if token == "" {
 		return nil, errors.New("Missing bot token")
@@ -26,6 +27,7 @@ func NewBot(inCh chan mqtt.Message) (*Bot, error) {
 		token:  token,
 		stopCh: make(chan bool),
 		inCh:   inCh,
+		outCh:  outCh,
 	}
 
 	return bot, nil
@@ -83,15 +85,28 @@ func (b *Bot) messageReceived(update tgbotapi.Update) {
 		case "status":
 			msg.Text = "I'm ok."
 		case "on":
-			msg.Text = "Switch on"
+			msg.Text = b.newCommand("on", update.Message.CommandArguments())
 		case "off":
-			msg.Text = "Switch off"
+			msg.Text = b.newCommand("off", update.Message.CommandArguments())
 		default:
 			msg.Text = "I don't know that command"
 		}
 		if _, err := b.api.Send(msg); err != nil {
 			log.Error(err)
 		}
+	}
+}
+
+func (b *Bot) newCommand(command, arguments string) string {
+	switch command {
+	case "on":
+		b.outCh <- mqtt.Message{Topic: "homeassistant/switch1", Message: []byte("ON")}
+		return "Switched on"
+	case "off":
+		b.outCh <- mqtt.Message{Topic: "homeassistant/switch1", Message: []byte("OFF")}
+		return "Switched off"
+	default:
+		return "Wrong command"
 	}
 }
 
