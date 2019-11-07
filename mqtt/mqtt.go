@@ -2,6 +2,8 @@ package mqtt
 
 import (
 	"errors"
+	"os"
+	"sync"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	log "github.com/sirupsen/logrus"
@@ -10,6 +12,8 @@ import (
 type Client struct {
 	mqttClient MQTT.Client
 	topics     []string
+	stopWg     *sync.WaitGroup
+	shutdownCh chan os.Signal
 	outCh      chan Message
 	inCh       chan Message
 }
@@ -19,7 +23,7 @@ type Message struct {
 	Message []byte
 }
 
-func NewClient(brokerUrl string, inCh, outCh chan Message) (*Client, error) {
+func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, brokerUrl string, inCh, outCh chan Message) (*Client, error) {
 	opts := MQTT.NewClientOptions().AddBroker(brokerUrl)
 	opts.SetClientID("her")
 
@@ -27,6 +31,8 @@ func NewClient(brokerUrl string, inCh, outCh chan Message) (*Client, error) {
 		inCh:       inCh,
 		outCh:      outCh,
 		mqttClient: MQTT.NewClient(opts),
+		stopWg:     stopWg,
+		shutdownCh: shutdownCh,
 	}
 
 	return client, nil
@@ -49,6 +55,14 @@ func (c *Client) Connect() error {
 		}
 	}()
 
+	go func() {
+		<-c.shutdownCh
+		if err := c.stop(); err != nil {
+			log.Error(err)
+		}
+		c.stopWg.Done()
+	}()
+
 	return nil
 }
 
@@ -67,7 +81,7 @@ func (c *Client) Publish(msg Message) error {
 	return token.Error()
 }
 
-func (c *Client) Stop() error {
+func (c *Client) stop() error {
 	log.Info("Stopping mqtt")
 
 	for _, topic := range c.topics {

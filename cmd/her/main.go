@@ -29,25 +29,28 @@ func main() {
 	messagesToBotCh := make(chan mqtt.Message)
 	messagesFromBotCh := make(chan mqtt.Message)
 
-	var wg sync.WaitGroup
+	var startWg sync.WaitGroup
+	var stopWg sync.WaitGroup
 
 	var m *mqtt.Client
-	wg.Add(1)
+	startWg.Add(1)
+	stopWg.Add(1)
 	go func() {
+		defer startWg.Done()
 		log.Info("Initializing mqtt")
-		defer wg.Done()
-		m, err = mqtt.NewClient("tcp://192.168.0.100:1883", messagesFromBotCh, messagesToBotCh)
+		m, err = mqtt.NewClient(&stopWg, shutdown, "tcp://test.mosquitto.org:1883", messagesFromBotCh, messagesToBotCh)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 
 	var b *bot.Bot
-	wg.Add(1)
+	startWg.Add(1)
+	stopWg.Add(1)
 	go func() {
+		defer startWg.Done()
 		log.Info("Initializing bot")
-		defer wg.Done()
-		b, err = bot.NewBot(messagesFromBotCh, messagesToBotCh)
+		b, err = bot.NewBot(&stopWg, shutdown, messagesFromBotCh, messagesToBotCh)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -57,17 +60,14 @@ func main() {
 	go func() {
 		<-shutdown
 		log.Info("CTRL+C caught, doing clean shutdown (use CTRL+\\ aka SIGQUIT to abort)")
-		b.Stop()
-		if err := m.Stop(); err != nil {
-			log.Error(err)
-		}
+		close(shutdown)
 		close(messagesToBotCh)
 		close(messagesFromBotCh)
+		stopWg.Wait()
 		quit <- true
 	}()
 
-	wg.Wait()
-
+	startWg.Wait()
 	if err := m.Connect(); err != nil {
 		log.Error(err)
 	}

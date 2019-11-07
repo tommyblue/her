@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
@@ -11,23 +12,25 @@ import (
 )
 
 type Bot struct {
-	api    *tgbotapi.BotAPI
-	token  string
-	stopCh chan bool
-	inCh   chan mqtt.Message
-	outCh  chan mqtt.Message
+	api        *tgbotapi.BotAPI
+	token      string
+	stopWg     *sync.WaitGroup
+	shutdownCh chan os.Signal
+	inCh       <-chan mqtt.Message
+	outCh      chan<- mqtt.Message
 }
 
-func NewBot(outCh, inCh chan mqtt.Message) (*Bot, error) {
+func NewBot(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, outCh, inCh chan mqtt.Message) (*Bot, error) {
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 	if token == "" {
 		return nil, errors.New("Missing bot token")
 	}
 	bot := &Bot{
-		token:  token,
-		stopCh: make(chan bool),
-		inCh:   inCh,
-		outCh:  outCh,
+		token:      token,
+		stopWg:     stopWg,
+		shutdownCh: shutdownCh,
+		inCh:       inCh,
+		outCh:      outCh,
 	}
 
 	return bot, nil
@@ -55,7 +58,9 @@ func (b *Bot) Connect() error {
 		select {
 		case message := <-b.inCh:
 			b.sendMessage(fmt.Sprintf("[%s] %s", message.Topic, message.Message))
-		case <-b.stopCh:
+		case <-b.shutdownCh:
+			b.stop()
+			b.stopWg.Done()
 			return nil
 		case update := <-updates:
 			b.messageReceived(update)
@@ -63,9 +68,9 @@ func (b *Bot) Connect() error {
 	}
 }
 
-func (b *Bot) Stop() {
+func (b *Bot) stop() {
 	log.Info("Stopping bot")
-	b.stopCh <- true
+	b.sendMessage("Bye bye")
 }
 
 func (b *Bot) messageReceived(update tgbotapi.Update) {
