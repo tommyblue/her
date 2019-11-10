@@ -21,6 +21,13 @@ func init() {
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Println("error :", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	var err error
 
 	shutdown := make(chan os.Signal, 1)
@@ -70,15 +77,20 @@ func main() {
 	startWg.Wait()
 	if err := m.Connect(); err != nil {
 		log.Error(err)
+		return err
 	}
 	if err := m.Subscribe("sensor/temperature"); err != nil {
 		log.Error(err)
+		return err
 	}
 	if err := b.Connect(); err != nil {
 		log.Error(err)
+		return err
 	}
 
 	log.Info("Waiting to quit..")
 	<-quit
 	log.Info("Done")
+
+	return nil
 }
