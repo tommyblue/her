@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
+	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/tommyblue/her/bot"
 	"github.com/tommyblue/her/mqtt"
 )
@@ -28,7 +32,7 @@ func main() {
 }
 
 func run() error {
-	var err error
+	err := config()
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
@@ -45,7 +49,7 @@ func run() error {
 	go func() {
 		defer startWg.Done()
 		log.Info("Initializing mqtt")
-		m, err = mqtt.NewClient(&stopWg, shutdown, "tcp://test.mosquitto.org:1883", messagesFromBotCh, messagesToBotCh)
+		m, err = mqtt.NewClient(&stopWg, shutdown, messagesFromBotCh, messagesToBotCh)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -83,6 +87,10 @@ func run() error {
 		log.Error(err)
 		return err
 	}
+	if err := m.Subscribe("binary_sensor/openclose_2"); err != nil {
+		log.Error(err)
+		return err
+	}
 	if err := b.Connect(); err != nil {
 		log.Error(err)
 		return err
@@ -93,4 +101,21 @@ func run() error {
 	log.Info("Done")
 
 	return nil
+}
+
+func config() error {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s <config file>\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "The argument <config file> must be a toml file with a valid configuration\n\n")
+	}
+	flag.Parse()
+
+	fmt.Println(flag.Arg(0))
+	f, err := os.Open(flag.Arg(0))
+	if err != nil {
+		return errors.New("Error opening the config file")
+	}
+
+	viper.SetConfigType("toml")
+	return viper.ReadConfig(f)
 }
