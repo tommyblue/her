@@ -1,19 +1,23 @@
 package bot
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"sync"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/tommyblue/her/mqtt"
 )
 
+type BotImpl interface {
+	Connect() error
+	Stop() error
+	SendMessage(string) error
+}
+
 type Bot struct {
-	api        *tgbotapi.BotAPI
-	token      string
+	bot        BotImpl
 	stopWg     *sync.WaitGroup
 	shutdownCh chan os.Signal
 	inCh       <-chan mqtt.Message
@@ -21,103 +25,50 @@ type Bot struct {
 }
 
 func NewBot(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, outCh, inCh chan mqtt.Message) (*Bot, error) {
-	token := os.Getenv("TELEGRAM_BOT_TOKEN")
-	if token == "" {
-		return nil, errors.New("Missing bot token")
-	}
 	bot := &Bot{
-		token:      token,
 		stopWg:     stopWg,
 		shutdownCh: shutdownCh,
 		inCh:       inCh,
 		outCh:      outCh,
 	}
 
+	switch viper.GetString("bot.type") {
+	case "telegram":
+		telegramBot, err := NewTelegramBot(bot)
+		if err != nil {
+			return nil, err
+		}
+		bot.bot = telegramBot
+	default:
+		log.Panic("Unkown bot")
+	}
+
 	return bot, nil
 }
 
 func (b *Bot) Connect() error {
-	botApi, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
-	if err != nil {
+	if err := b.bot.Connect(); err != nil {
+		fmt.Println("Returning", err)
 		return err
 	}
-	b.api = botApi
 
-	b.api.Debug = false
-
-	log.Info("Authorized on account ", b.api.Self.UserName)
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-	updates, err := b.api.GetUpdatesChan(u)
-	if err != nil {
-		log.Panic(err)
-	}
+	fmt.Println("here")
 
 	for {
 		select {
 		case message := <-b.inCh:
-			b.sendMessage(fmt.Sprintf("[%s] %s", message.Topic, message.Message))
+			msg := fmt.Sprintf("[%s] %s", message.Topic, message.Message)
+			log.Println(msg)
+			if err := b.bot.SendMessage(msg); err != nil {
+				log.Error(err)
+			}
 		case <-b.shutdownCh:
-			b.stop()
+			fmt.Println("Shutting down")
+			if err := b.bot.Stop(); err != nil {
+				return err
+			}
 			b.stopWg.Done()
 			return nil
-		case update := <-updates:
-			b.messageReceived(update)
 		}
-	}
-}
-
-func (b *Bot) stop() {
-	log.Info("Stopping bot")
-	b.sendMessage("Bye bye")
-}
-
-func (b *Bot) messageReceived(update tgbotapi.Update) {
-	if update.Message == nil {
-		return
-	}
-
-	log.Info(fmt.Sprintf("[%s] %s", update.Message.From.UserName, update.Message.Text))
-
-	if update.Message.IsCommand() {
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
-		switch update.Message.Command() {
-		case "help":
-			msg.Text = "type /sayhi or /status."
-		case "sayhi":
-			msg.Text = "Hi :)"
-		case "status":
-			msg.Text = "I'm ok."
-		case "on":
-			msg.Text = b.newCommand("on", update.Message.CommandArguments())
-		case "off":
-			msg.Text = b.newCommand("off", update.Message.CommandArguments())
-		default:
-			msg.Text = "I don't know that command"
-		}
-		if _, err := b.api.Send(msg); err != nil {
-			log.Error(err)
-		}
-	}
-}
-
-func (b *Bot) newCommand(command, arguments string) string {
-	switch command {
-	case "on":
-		b.outCh <- mqtt.Message{Topic: "homeassistant/switch1", Message: []byte("ON")}
-		return "Switched on"
-	case "off":
-		b.outCh <- mqtt.Message{Topic: "homeassistant/switch1", Message: []byte("OFF")}
-		return "Switched off"
-	default:
-		return "Wrong command"
-	}
-}
-
-func (b *Bot) sendMessage(message string) {
-	msg := tgbotapi.NewMessage(158066827, message)
-	if _, err := b.api.Send(msg); err != nil {
-		log.Panic(err)
 	}
 }

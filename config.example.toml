@@ -1,0 +1,5 @@
+[mqtt]
+broker_url = "tcp://test.mosquitto.org:1883"
+[bot]
+token = "<telegram token>"
+channel_id = 1234567890

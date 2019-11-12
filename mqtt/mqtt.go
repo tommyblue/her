@@ -1,21 +1,24 @@
 package mqtt
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"sync"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type Client struct {
-	mqttClient MQTT.Client
-	topics     []string
-	stopWg     *sync.WaitGroup
-	shutdownCh chan os.Signal
-	outCh      chan Message
-	inCh       chan Message
+	mqttClient   MQTT.Client
+	topics       []string
+	stopWg       *sync.WaitGroup
+	shutdownCh   chan os.Signal
+	outCh        chan Message
+	inCh         chan Message
+	lastMessages map[string]Message
 }
 
 type Message struct {
@@ -23,16 +26,18 @@ type Message struct {
 	Message []byte
 }
 
-func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, brokerUrl string, inCh, outCh chan Message) (*Client, error) {
+func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh chan Message) (*Client, error) {
+	brokerUrl := viper.GetString("mqtt.broker_url")
 	opts := MQTT.NewClientOptions().AddBroker(brokerUrl)
 	opts.SetClientID("her")
 
 	client := &Client{
-		inCh:       inCh,
-		outCh:      outCh,
-		mqttClient: MQTT.NewClient(opts),
-		stopWg:     stopWg,
-		shutdownCh: shutdownCh,
+		inCh:         inCh,
+		outCh:        outCh,
+		mqttClient:   MQTT.NewClient(opts),
+		stopWg:       stopWg,
+		shutdownCh:   shutdownCh,
+		lastMessages: make(map[string]Message),
 	}
 
 	return client, nil
@@ -95,8 +100,14 @@ func (c *Client) stop() error {
 }
 
 func (c *Client) MsgCallback(client MQTT.Client, msg MQTT.Message) {
-	c.outCh <- Message{
+	message := Message{
 		Topic:   msg.Topic(),
 		Message: msg.Payload(),
 	}
+
+	if !bytes.Equal(c.lastMessages[message.Topic].Message, message.Message) {
+		c.outCh <- message
+	}
+
+	c.lastMessages[message.Topic] = message
 }
