@@ -52,8 +52,6 @@ func (b *Bot) Connect() error {
 		return err
 	}
 
-	fmt.Println("here")
-
 	for {
 		select {
 		case message := <-b.inCh:
@@ -63,7 +61,7 @@ func (b *Bot) Connect() error {
 				log.Error(err)
 			}
 		case <-b.shutdownCh:
-			fmt.Println("Shutting down")
+			log.Info("Shutting down")
 			if err := b.bot.Stop(); err != nil {
 				return err
 			}

@@ -83,14 +83,14 @@ func run() error {
 		log.Error(err)
 		return err
 	}
-	if err := m.Subscribe("sensor/temperature"); err != nil {
-		log.Error(err)
-		return err
+	for _, subscription := range viper.Get("subscriptions").([]interface{}) {
+		topic := subscription.(map[string]interface{})["topic"].(string)
+		if err := m.Subscribe(topic); err != nil {
+			log.Error(err)
+			return err
+		}
 	}
-	if err := m.Subscribe("binary_sensor/openclose_2"); err != nil {
-		log.Error(err)
-		return err
-	}
+
 	if err := b.Connect(); err != nil {
 		log.Error(err)
 		return err
