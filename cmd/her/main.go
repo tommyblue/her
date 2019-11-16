@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/tommyblue/her/bot"
+	"github.com/tommyblue/her/her"
 	"github.com/tommyblue/her/mqtt"
 )
 
@@ -32,13 +33,16 @@ func main() {
 }
 
 func run() error {
-	err := config()
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
-	messagesToBotCh := make(chan mqtt.Message)
-	messagesFromBotCh := make(chan mqtt.Message)
+	messagesToBotCh := make(chan her.Message)
+	messagesFromBotCh := make(chan her.Message)
 
 	var startWg sync.WaitGroup
 	var stopWg sync.WaitGroup
@@ -103,7 +107,7 @@ func run() error {
 	return nil
 }
 
-func config() error {
+func loadConfig() error {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <config file>\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "The argument <config file> must be a toml file with a valid configuration\n\n")

@@ -9,6 +9,7 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/tommyblue/her/her"
 )
 
 type Client struct {
@@ -16,17 +17,12 @@ type Client struct {
 	topics       []string
 	stopWg       *sync.WaitGroup
 	shutdownCh   chan os.Signal
-	outCh        chan Message
-	inCh         chan Message
-	lastMessages map[string]Message
+	outCh        chan her.Message
+	inCh         chan her.Message
+	lastMessages map[string]her.Message
 }
 
-type Message struct {
-	Topic   string
-	Message []byte
-}
-
-func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh chan Message) (*Client, error) {
+func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh chan her.Message) (*Client, error) {
 	brokerUrl := viper.GetString("mqtt.broker_url")
 	opts := MQTT.NewClientOptions().AddBroker(brokerUrl)
 	opts.SetClientID("her")
@@ -37,7 +33,7 @@ func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh ch
 		mqttClient:   MQTT.NewClient(opts),
 		stopWg:       stopWg,
 		shutdownCh:   shutdownCh,
-		lastMessages: make(map[string]Message),
+		lastMessages: make(map[string]her.Message),
 	}
 
 	return client, nil
@@ -80,7 +76,7 @@ func (c *Client) Subscribe(topic string) error {
 	return nil
 }
 
-func (c *Client) Publish(msg Message) error {
+func (c *Client) Publish(msg her.Message) error {
 	token := c.mqttClient.Publish(msg.Topic, 0, true, msg.Message)
 	token.Wait()
 	return token.Error()
@@ -100,7 +96,7 @@ func (c *Client) stop() error {
 }
 
 func (c *Client) MsgCallback(client MQTT.Client, msg MQTT.Message) {
-	message := Message{
+	message := her.Message{
 		Topic:   msg.Topic(),
 		Message: msg.Payload(),
 	}

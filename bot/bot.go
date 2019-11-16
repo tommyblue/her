@@ -7,7 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/tommyblue/her/mqtt"
+	"github.com/tommyblue/her/her"
 )
 
 type BotImpl interface {
@@ -20,11 +20,11 @@ type Bot struct {
 	bot        BotImpl
 	stopWg     *sync.WaitGroup
 	shutdownCh chan os.Signal
-	inCh       <-chan mqtt.Message
-	outCh      chan<- mqtt.Message
+	inCh       <-chan her.Message
+	outCh      chan<- her.Message
 }
 
-func NewBot(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, outCh, inCh chan mqtt.Message) (*Bot, error) {
+func NewBot(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, outCh, inCh chan her.Message) (*Bot, error) {
 	bot := &Bot{
 		stopWg:     stopWg,
 		shutdownCh: shutdownCh,

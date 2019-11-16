@@ -7,7 +7,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/tommyblue/her/mqtt"
+	"github.com/tommyblue/her/her"
 )
 
 type TelegramBot struct {
@@ -105,10 +105,10 @@ func (t *TelegramBot) messageReceived(update tgbotapi.Update) {
 func (t *TelegramBot) newCommandReceived(command, arguments string) string {
 	switch command {
 	case "on":
-		t.bot.outCh <- mqtt.Message{Topic: "homeassistant/switch1", Message: []byte("ON")}
+		t.bot.outCh <- her.Message{Topic: "homeassistant/switch1", Message: []byte("ON")}
 		return "Switched on"
 	case "off":
-		t.bot.outCh <- mqtt.Message{Topic: "homeassistant/switch1", Message: []byte("OFF")}
+		t.bot.outCh <- her.Message{Topic: "homeassistant/switch1", Message: []byte("OFF")}
 		return "Switched off"
 	default:
 		return "Wrong command"
