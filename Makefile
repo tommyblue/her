@@ -8,10 +8,12 @@ her:
 	docker build \
 		-t $(PROJECT)/her-amd64:1.0 \
 		--build-arg PACKAGE_NAME=her \
-		--build-arg TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN} \
 		--build-arg VCS_REF=`git rev-parse HEAD` \
 		--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 		.
+
+build:
+	cd cmd/her && env GOOS=linux GOARCH=arm GOARM=5 go build -o ../../her .
 # up:
 # 	docker-compose up
 
