@@ -13,7 +13,10 @@ her:
 		.
 
 build:
-	cd cmd/her && env GOOS=linux GOARCH=arm GOARM=5 go build -o ../../her .
+	cd cmd/her && go build -mod=readonly -ldflags "-X main.build=`git rev-parse HEAD`" -o ../../dist/her .
+
+build-pi:
+	cd cmd/her && env GOOS=linux GOARCH=arm GOARM=5 go build -mod=readonly -ldflags "-X main.build=`git rev-parse HEAD`" -o ../../dist/her-pi .
 # up:
 # 	docker-compose up
 

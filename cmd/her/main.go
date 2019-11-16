@@ -16,13 +16,21 @@ import (
 	"github.com/tommyblue/her/mqtt"
 )
 
+// build is the git version of this program. It is set using build flags in the makefile.
+var build = "develop"
+var (
+	flagVersion     = flag.Bool("version", false, "Print build version and exit")
+	flagVerbose     = flag.Bool("v", false, "verbose logging (info)")
+	flagVeryVerbose = flag.Bool("vv", false, "very verbose logging (debug)")
+)
+
 func init() {
 	log.SetFormatter(&log.TextFormatter{})
 
 	// Output to stderr instead of stdout, could also be a file.
 	log.SetOutput(os.Stderr)
 
-	// log.SetLevel(log.WarnLevel)
+	log.SetLevel(log.WarnLevel)
 }
 
 func main() {
@@ -33,7 +41,12 @@ func main() {
 }
 
 func run() error {
-	err := loadConfig()
+	err := parseFlags()
+	if err != nil {
+		return err
+	}
+
+	err = loadConfig()
 	if err != nil {
 		return err
 	}
@@ -107,14 +120,36 @@ func run() error {
 	return nil
 }
 
-func loadConfig() error {
+func parseFlags() error {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s <config file>\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [opts] <config file>\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "The argument <config file> must be a toml file with a valid configuration\n\n")
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\n")
 	}
 	flag.Parse()
 
-	fmt.Println(flag.Arg(0))
+	if *flagVerbose {
+		log.SetLevel(log.InfoLevel)
+	} else if *flagVeryVerbose {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	if *flagVersion {
+		fmt.Printf("HER - Version %q  https://github.com/tommyblue/her/commit/%s\n", build, build)
+		os.Exit(0)
+	}
+
+	if len(flag.Args()) < 1 {
+		flag.Usage()
+		return errors.New("Too few arguments")
+	}
+
+	return nil
+}
+
+func loadConfig() error {
 	f, err := os.Open(flag.Arg(0))
 	if err != nil {
 		return errors.New("Error opening the config file")

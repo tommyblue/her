@@ -2,6 +2,7 @@
 broker_url = "tcp://test.mosquitto.org:1883"
 
 [bot]
+type = "telegram" # The only one supported atm
 token = "<telegram token>"
 channel_id = 1234567890
 
