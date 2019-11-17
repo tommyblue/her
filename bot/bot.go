@@ -56,7 +56,7 @@ func (b *Bot) Connect() error {
 		select {
 		case message := <-b.inCh:
 			msg := fmt.Sprintf("[%s] %s", message.Topic, message.Message)
-			log.Println(msg)
+			log.Info("Sending BOT message: ", msg)
 			if err := b.bot.SendMessage(msg); err != nil {
 				log.Error(err)
 			}

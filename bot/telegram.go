@@ -46,6 +46,8 @@ func (t *TelegramBot) Connect() error {
 
 	log.Info("Authorized on account ", t.api.Self.UserName)
 
+	return t.SendMessage("Hi! I've been just started")
+
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := t.api.GetUpdatesChan(u)

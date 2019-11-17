@@ -8,6 +8,9 @@ channel_id = 1234567890
 
 [[subscriptions]]
 topic = "sensor/temperature"
+repeat = true # Send all messages to bot
+repeat_only_if_different = true # Repeat only if different from previous value
 
 [[subscriptions]]
 topic = "binary_sensor/openclose_2"
+repeat = false

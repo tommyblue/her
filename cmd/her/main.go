@@ -100,9 +100,12 @@ func run() error {
 		log.Error(err)
 		return err
 	}
-	for _, subscription := range viper.Get("subscriptions").([]interface{}) {
-		topic := subscription.(map[string]interface{})["topic"].(string)
-		if err := m.Subscribe(topic); err != nil {
+	var subscriptionConfs []her.SubscriptionConf
+	if err := viper.UnmarshalKey("subscriptions", &subscriptionConfs); err != nil {
+		return err
+	}
+	for _, s := range subscriptionConfs {
+		if err := m.Subscribe(s); err != nil {
 			log.Error(err)
 			return err
 		}

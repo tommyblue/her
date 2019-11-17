@@ -3,6 +3,7 @@ package mqtt
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 
@@ -13,13 +14,13 @@ import (
 )
 
 type Client struct {
-	mqttClient   MQTT.Client
-	topics       []string
-	stopWg       *sync.WaitGroup
-	shutdownCh   chan os.Signal
-	outCh        chan her.Message
-	inCh         chan her.Message
-	lastMessages map[string]her.Message
+	mqttClient    MQTT.Client
+	subscriptions map[string]her.SubscriptionConf
+	stopWg        *sync.WaitGroup
+	shutdownCh    chan os.Signal
+	outCh         chan her.Message
+	inCh          chan her.Message
+	lastMessages  map[string]her.Message
 }
 
 func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh chan her.Message) (*Client, error) {
@@ -28,12 +29,13 @@ func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh ch
 	opts.SetClientID("her")
 
 	client := &Client{
-		inCh:         inCh,
-		outCh:        outCh,
-		mqttClient:   MQTT.NewClient(opts),
-		stopWg:       stopWg,
-		shutdownCh:   shutdownCh,
-		lastMessages: make(map[string]her.Message),
+		subscriptions: make(map[string]her.SubscriptionConf),
+		inCh:          inCh,
+		outCh:         outCh,
+		mqttClient:    MQTT.NewClient(opts),
+		stopWg:        stopWg,
+		shutdownCh:    shutdownCh,
+		lastMessages:  make(map[string]her.Message),
 	}
 
 	return client, nil
@@ -67,12 +69,12 @@ func (c *Client) Connect() error {
 	return nil
 }
 
-func (c *Client) Subscribe(topic string) error {
-	log.Info("Subscribing ", topic)
-	if token := c.mqttClient.Subscribe(topic, 0, c.MsgCallback); token.Wait() && token.Error() != nil {
+func (c *Client) Subscribe(s her.SubscriptionConf) error {
+	log.Info("Subscribing ", s.Topic, ", repeat: ", s.Repeat, ", repeat_only_if_different: ", s.RepeatOnlyIfDifferent)
+	if token := c.mqttClient.Subscribe(s.Topic, 0, c.MsgCallback); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	c.topics = append(c.topics, topic)
+	c.subscriptions[s.Topic] = s
 	return nil
 }
 
@@ -85,10 +87,11 @@ func (c *Client) Publish(msg her.Message) error {
 func (c *Client) stop() error {
 	log.Info("Stopping mqtt")
 
-	for _, topic := range c.topics {
+	for topic := range c.subscriptions {
 		if token := c.mqttClient.Unsubscribe(topic); token.Wait() && token.Error() != nil {
 			return token.Error()
 		}
+		delete(c.subscriptions, topic)
 	}
 	log.Info("Disconnetting MQTT")
 	c.mqttClient.Disconnect(250)
@@ -101,9 +104,25 @@ func (c *Client) MsgCallback(client MQTT.Client, msg MQTT.Message) {
 		Message: msg.Payload(),
 	}
 
-	if !bytes.Equal(c.lastMessages[message.Topic].Message, message.Message) {
+	if message.Topic == "" && (message.Message == nil || bytes.Equal(message.Message, []byte(""))) {
+		return
+	}
+
+	s, ok := c.subscriptions[message.Topic]
+	if !ok {
+		log.Errorf("Cannot find topic %s among subscribed topics\n", message.Topic)
+		return
+	}
+
+	log.Info(fmt.Sprintf("Received MQTT message: Topic: %s Message: %s", message.Topic, message.Message))
+
+	if shouldSendMessage(s, message, c.lastMessages[message.Topic].Message) {
 		c.outCh <- message
 	}
 
 	c.lastMessages[message.Topic] = message
+}
+
+func shouldSendMessage(s her.SubscriptionConf, message her.Message, lastMessage []byte) bool {
+	return s.Repeat && (!s.RepeatOnlyIfDifferent || !bytes.Equal(lastMessage, message.Message))
 }
