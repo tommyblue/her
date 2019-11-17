@@ -52,6 +52,7 @@ func (c *Client) Connect() error {
 
 	go func() {
 		for msg := range c.inCh {
+			log.Info("Received: ", msg)
 			if err := c.Publish(msg); err != nil {
 				log.Error(err)
 			}

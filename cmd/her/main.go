@@ -111,6 +111,17 @@ func run() error {
 		}
 	}
 
+	var commandConfs []her.CommandConf
+	if err := viper.UnmarshalKey("commands", &commandConfs); err != nil {
+		return err
+	}
+	for _, c := range commandConfs {
+		if err := b.AddCommand(c); err != nil {
+			log.Error(err)
+			return err
+		}
+	}
+
 	if err := b.Connect(); err != nil {
 		log.Error(err)
 		return err

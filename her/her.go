@@ -10,3 +10,10 @@ type SubscriptionConf struct {
 	Repeat                bool
 	RepeatOnlyIfDifferent bool `mapstructure:"repeat_only_if_different"`
 }
+
+type CommandConf struct {
+	Command     string
+	Topic       string
+	Message     string
+	FeedbackMsg string `mapstructure:"feedback_message"`
+}

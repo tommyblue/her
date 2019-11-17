@@ -6,6 +6,12 @@ type = "telegram" # The only one supported atm
 token = "<telegram token>"
 channel_id = 1234567890
 
+[[commands]] # Receive a command from the bot and send a message to MQTT
+command = "on" # Listens for the command /on in the bot
+topic = "homeassistant/switch1" # MQTT topic to publish the message to
+message = "ON" # The value of the MQTT message
+feedback_message = "Switched on" # The message to send back to bot after sending to MQTT
+
 [[subscriptions]]
 topic = "sensor/temperature"
 repeat = true # Send all messages to bot

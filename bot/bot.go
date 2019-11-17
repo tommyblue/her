@@ -14,6 +14,7 @@ type BotImpl interface {
 	Connect() error
 	Stop() error
 	SendMessage(string) error
+	AddCommand(her.CommandConf) error
 }
 
 type Bot struct {
@@ -44,6 +45,10 @@ func NewBot(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, outCh, inCh chan 
 	}
 
 	return bot, nil
+}
+
+func (b *Bot) AddCommand(c her.CommandConf) error {
+	return b.bot.AddCommand(c)
 }
 
 func (b *Bot) Connect() error {

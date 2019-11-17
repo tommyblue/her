@@ -15,6 +15,7 @@ type TelegramBot struct {
 	token     string
 	channelId int64
 	bot       *Bot
+	commands  map[string]her.CommandConf
 }
 
 func NewTelegramBot(bot *Bot) (*TelegramBot, error) {
@@ -32,6 +33,7 @@ func NewTelegramBot(bot *Bot) (*TelegramBot, error) {
 		token:     token,
 		channelId: channelId,
 		bot:       bot,
+		commands:  make(map[string]her.CommandConf),
 	}, nil
 }
 
@@ -46,7 +48,9 @@ func (t *TelegramBot) Connect() error {
 
 	log.Info("Authorized on account ", t.api.Self.UserName)
 
-	return t.SendMessage("Hi! I've been just started")
+	if err := t.SendMessage("Hi! I've been just started"); err != nil {
+		log.Error(err)
+	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -75,6 +79,16 @@ func (t *TelegramBot) SendMessage(message string) error {
 	return err
 }
 
+func (t *TelegramBot) AddCommand(c her.CommandConf) error {
+	_, ok := t.commands[c.Command]
+	if ok {
+		return fmt.Errorf("Command %s already exists", c.Command)
+	}
+	t.commands[c.Command] = c
+
+	return nil
+}
+
 func (t *TelegramBot) messageReceived(update tgbotapi.Update) {
 	if update.Message == nil {
 		return
@@ -91,12 +105,8 @@ func (t *TelegramBot) messageReceived(update tgbotapi.Update) {
 			msg.Text = "Hi :)"
 		case "status":
 			msg.Text = "I'm ok."
-		case "on":
-			msg.Text = t.newCommandReceived("on", update.Message.CommandArguments())
-		case "off":
-			msg.Text = t.newCommandReceived("off", update.Message.CommandArguments())
 		default:
-			msg.Text = "I don't know that command"
+			msg.Text = t.checkCommands(update.Message.Command(), update.Message.CommandArguments())
 		}
 		if _, err := t.api.Send(msg); err != nil {
 			log.Error(err)
@@ -104,15 +114,11 @@ func (t *TelegramBot) messageReceived(update tgbotapi.Update) {
 	}
 }
 
-func (t *TelegramBot) newCommandReceived(command, arguments string) string {
-	switch command {
-	case "on":
-		t.bot.outCh <- her.Message{Topic: "homeassistant/switch1", Message: []byte("ON")}
-		return "Switched on"
-	case "off":
-		t.bot.outCh <- her.Message{Topic: "homeassistant/switch1", Message: []byte("OFF")}
-		return "Switched off"
-	default:
-		return "Wrong command"
+func (t *TelegramBot) checkCommands(command, args string) string {
+	cmd, ok := t.commands[command]
+	if !ok {
+		return "I don't know that command"
 	}
+	t.bot.outCh <- her.Message{Topic: cmd.Topic, Message: []byte(cmd.Message)}
+	return cmd.FeedbackMsg
 }
