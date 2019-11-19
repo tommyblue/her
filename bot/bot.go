@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"sync"
@@ -53,13 +54,16 @@ func (b *Bot) AddCommand(c her.CommandConf) error {
 
 func (b *Bot) Connect() error {
 	if err := b.bot.Connect(); err != nil {
-		fmt.Println("Returning", err)
+		log.Error("Returning ", err)
 		return err
 	}
 
 	for {
 		select {
 		case message := <-b.inCh:
+			if message.Topic == "" || bytes.Equal(message.Message, []byte("")) {
+				continue
+			}
 			msg := fmt.Sprintf("[%s] %s", message.Topic, message.Message)
 			log.Info("Sending BOT message: ", msg)
 			if err := b.bot.SendMessage(msg); err != nil {

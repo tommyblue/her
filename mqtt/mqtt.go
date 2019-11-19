@@ -52,7 +52,7 @@ func (c *Client) Connect() error {
 
 	go func() {
 		for msg := range c.inCh {
-			log.Info("Received: ", msg)
+			log.Debug("Received: ", msg)
 			if err := c.Publish(msg); err != nil {
 				log.Error(err)
 			}
@@ -118,6 +118,7 @@ func (c *Client) MsgCallback(client MQTT.Client, msg MQTT.Message) {
 	log.Info(fmt.Sprintf("Received MQTT message: Topic: %s Message: %s", message.Topic, message.Message))
 
 	if shouldSendMessage(s, message, c.lastMessages[message.Topic].Message) {
+		log.Info("Sending %v", message)
 		c.outCh <- message
 	}
 
