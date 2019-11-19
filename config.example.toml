@@ -11,6 +11,7 @@ command = "on" # Listens for the command /on in the bot
 topic = "homeassistant/switch1" # MQTT topic to publish the message to
 message = "ON" # The value of the MQTT message
 feedback_message = "Switched on" # The message to send back to bot after sending to MQTT
+help = "Switch on the light in the kitchen"
 
 [[subscriptions]]
 topic = "sensor/temperature"

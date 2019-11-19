@@ -116,6 +116,9 @@ func run() error {
 		return err
 	}
 	for _, c := range commandConfs {
+		if err := validateCommand(c); err != nil {
+			return err
+		}
 		if err := b.AddCommand(c); err != nil {
 			log.Error(err)
 			return err
@@ -130,6 +133,26 @@ func run() error {
 	log.Info("Waiting to quit..")
 	<-quit
 	log.Info("Done")
+
+	return nil
+}
+
+func validateCommand(command her.CommandConf) error {
+	if command.Help == "" {
+		return fmt.Errorf("Command /%s is missing the help", command.Command)
+	}
+
+	if command.Command == "" {
+		return fmt.Errorf("Command is empty")
+	}
+
+	if command.Topic == "" {
+		return fmt.Errorf("Command /%s is missing the topic", command.Command)
+	}
+
+	if command.Message == "" {
+		return fmt.Errorf("Command /%s is missing the message", command.Command)
+	}
 
 	return nil
 }

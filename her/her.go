@@ -16,4 +16,5 @@ type CommandConf struct {
 	Topic       string
 	Message     string
 	FeedbackMsg string `mapstructure:"feedback_message"`
+	Help        string
 }

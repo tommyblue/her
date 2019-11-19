@@ -3,6 +3,7 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
@@ -100,11 +101,7 @@ func (t *TelegramBot) messageReceived(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 		switch update.Message.Command() {
 		case "help":
-			msg.Text = "type /sayhi or /status."
-		case "sayhi":
-			msg.Text = "Hi :)"
-		case "status":
-			msg.Text = "I'm ok."
+			msg.Text = t.printHelp()
 		default:
 			msg.Text = t.checkCommands(update.Message.Command(), update.Message.CommandArguments())
 		}
@@ -114,9 +111,20 @@ func (t *TelegramBot) messageReceived(update tgbotapi.Update) {
 	}
 }
 
+func (t *TelegramBot) printHelp() string {
+	var b strings.Builder
+	b.WriteString("Available commands:\n\n")
+	b.WriteString("/help - Get this help\n")
+	for command, conf := range t.commands {
+		b.WriteString(fmt.Sprintf("/%s - %s\n", command, conf.Help))
+	}
+	return b.String()
+}
+
 func (t *TelegramBot) checkCommands(command, args string) string {
 	cmd, ok := t.commands[command]
 	if !ok {
+		log.Error("Unknown command: ", command)
 		return "I don't know that command"
 	}
 	t.bot.outCh <- her.Message{Topic: cmd.Topic, Message: []byte(cmd.Message)}
