@@ -118,7 +118,7 @@ func (c *Client) MsgCallback(client MQTT.Client, msg MQTT.Message) {
 	log.Info(fmt.Sprintf("Received MQTT message: Topic: %s Message: %s", message.Topic, message.Message))
 
 	if shouldSendMessage(s, message, c.lastMessages[message.Topic].Message) {
-		log.Info("Sending %v", message)
+		log.Info(fmt.Sprintf("Sending %v", message))
 		c.outCh <- message
 	}
 
