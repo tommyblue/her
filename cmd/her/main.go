@@ -9,6 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/tommyblue/her/api"
 	"github.com/tommyblue/her/bot"
 	"github.com/tommyblue/her/her"
 	"github.com/tommyblue/her/mqtt"
@@ -159,6 +160,8 @@ func (c *mainConf) runServices() error {
 			return err
 		}
 	}
+
+	api.Start(c.messagesFromBotCh)
 
 	if err := c.bot.Connect(); err != nil {
 		log.Error(err)

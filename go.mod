@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/eclipse/paho.mqtt.golang v1.2.0
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
+	github.com/gorilla/mux v1.7.3
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2 // indirect
