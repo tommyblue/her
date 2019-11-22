@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/tommyblue/her/her"
 )
 
@@ -16,23 +17,39 @@ type Intent struct {
 }
 
 type Server struct {
-	outCh  chan<- her.Message
-	router *mux.Router
+	outCh       chan<- her.Message
+	router      *mux.Router
+	intentConfs []her.IntentConf
+	host        string
+	port        int
 }
 
-func Start(outCh chan her.Message) {
-	s := Server{
-		outCh: outCh,
+func NewServer(host string, port int, outCh chan her.Message) (*Server, error) {
+	if port == 0 {
+		port = 8080
 	}
-	s.Run()
+
+	s := &Server{
+		outCh: outCh,
+		host:  host,
+		port:  port,
+	}
+
+	if err := viper.UnmarshalKey("intents", &s.intentConfs); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
-func (s *Server) Run() {
+func (s *Server) Start() {
 	s.router = mux.NewRouter() //.StrictSlash(true)
 	s.router.HandleFunc("/", s.homeLink)
 	s.router.HandleFunc("/alexa/", s.alexaLink) //.Methods("POST")
 	go func() {
-		if err := http.ListenAndServe(":8080", s.router); err != nil {
+		address := fmt.Sprintf("%s:%d", s.host, s.port)
+		log.Info("Listening on ", address)
+		if err := http.ListenAndServe(address, s.router); err != nil {
 			log.Error(err)
 		}
 	}()
@@ -48,13 +65,22 @@ func (s *Server) alexaLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info(fmt.Sprintf("Action: %s, Room: %s", i.Action, i.Room))
-	if i.Action == "switch-on" && i.Room == "salotto" {
-		s.outCh <- her.Message{Topic: "cmnd/sf-salotto/Power", Message: []byte("ON")}
-	}
+	s.applyIntent(i)
+
 	fmt.Fprintf(w, "ok")
 }
 
 func (s *Server) homeLink(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome home!")
+}
+
+func (s *Server) applyIntent(i Intent) {
+	for _, intentConf := range s.intentConfs {
+		if intentConf.Action == i.Action && intentConf.Room == i.Room {
+			log.Info(fmt.Sprintf("Applying Action: %s, Room: %s", i.Action, i.Room))
+			s.outCh <- her.Message{Topic: intentConf.Topic, Message: []byte(intentConf.Message)}
+			return
+		}
+	}
+	log.Warning(fmt.Sprintf("Cannot find Action: %s, Room: %s", i.Action, i.Room))
 }

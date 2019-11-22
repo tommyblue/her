@@ -41,6 +41,7 @@ type mainConf struct {
 	quitCh            chan bool
 	mqtt              *mqtt.Client
 	bot               *bot.Bot
+	server            *api.Server
 }
 
 func main() {
@@ -64,6 +65,7 @@ func run() error {
 
 	c.initMQTT()
 	c.initBot()
+	c.initServer(viper.GetString("general.host"), viper.GetInt("general.port"))
 	c.manageShutdown()
 	if err := c.runServices(); err != nil {
 		return err
@@ -118,6 +120,19 @@ func (c *mainConf) initBot() {
 	}()
 }
 
+func (c *mainConf) initServer(host string, port int) {
+	c.startWg.Add(1)
+	go func() {
+		defer c.startWg.Done()
+		log.Info("Initializing server")
+		s, err := api.NewServer(host, port, c.messagesFromBotCh)
+		if err != nil {
+			log.Fatal(err)
+		}
+		c.server = s
+	}()
+}
+
 func (c *mainConf) manageShutdown() {
 	go func() {
 		<-c.shutdownCh
@@ -161,7 +176,7 @@ func (c *mainConf) runServices() error {
 		}
 	}
 
-	api.Start(c.messagesFromBotCh)
+	c.server.Start()
 
 	if err := c.bot.Connect(); err != nil {
 		log.Error(err)

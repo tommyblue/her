@@ -1,3 +1,7 @@
+[general]
+host = "0.0.0.0" # Address used by the HTTP server
+port = 8080 # Port used by the HTTP server
+
 [mqtt]
 broker_url = "tcp://test.mosquitto.org:1883"
 
@@ -21,3 +25,9 @@ repeat_only_if_different = true # Repeat only if different from previous value
 [[subscriptions]]
 topic = "binary_sensor/openclose_2"
 repeat = false
+
+[[intents]]
+action = "switch-on"
+room = "kitchen"
+topic = "rooms/kitchen/Power"
+message = "ON"
