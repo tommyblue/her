@@ -18,3 +18,10 @@ type CommandConf struct {
 	FeedbackMsg string `mapstructure:"feedback_message"`
 	Help        string
 }
+
+type IntentConf struct {
+	Action  string
+	Room    string
+	Topic   string
+	Message string
+}
