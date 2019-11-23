@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
@@ -21,6 +22,7 @@ type Client struct {
 	outCh         chan her.Message
 	inCh          chan her.Message
 	lastMessages  map[string]her.Message
+	lastAlarms    map[string][]byte
 }
 
 func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh chan her.Message) (*Client, error) {
@@ -36,6 +38,7 @@ func NewClient(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, inCh, outCh ch
 		stopWg:        stopWg,
 		shutdownCh:    shutdownCh,
 		lastMessages:  make(map[string]her.Message),
+		lastAlarms:    make(map[string][]byte),
 	}
 
 	return client, nil
@@ -121,8 +124,40 @@ func (c *Client) MsgCallback(client MQTT.Client, msg MQTT.Message) {
 		log.Info(fmt.Sprintf("Sending %v", message))
 		c.outCh <- message
 	}
-
 	c.lastMessages[message.Topic] = message
+
+	if err := c.checkAlarm(s, message); err != nil {
+		log.Error(err)
+	}
+}
+
+func (c *Client) checkAlarm(s her.SubscriptionConf, message her.Message) error {
+	if s.Alarm != nil {
+		v, err := strconv.ParseFloat(string(message.Message), 64)
+		if err != nil {
+			return fmt.Errorf("Cannot convert to int the value %v", message)
+		}
+
+		triggered := false
+		if s.Alarm.Operator == "greater_than" {
+			triggered = v > s.Alarm.Value
+		} else if s.Alarm.Operator == "less_than" {
+			triggered = v < s.Alarm.Value
+		} else if s.Alarm.Operator == "equal_to" {
+			triggered = v == s.Alarm.Value
+		} else {
+			return fmt.Errorf("Unknown operator %s", s.Alarm.Operator)
+		}
+
+		if triggered && !bytes.Equal(c.lastAlarms[message.Topic], message.Message) {
+			c.outCh <- her.Message{
+				Topic:   s.Topic,
+				Message: []byte(fmt.Sprintf("Alarm: %s value is %.2f", s.Label, v)),
+			}
+			c.lastAlarms[message.Topic] = message.Message
+		}
+	}
+	return nil
 }
 
 func shouldSendMessage(s her.SubscriptionConf, message her.Message, lastMessage []byte) bool {

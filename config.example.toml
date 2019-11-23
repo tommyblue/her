@@ -18,9 +18,13 @@ feedback_message = "Switched on" # The message to send back to bot after sending
 help = "Switch on the light in the kitchen"
 
 [[subscriptions]]
+label = "Kitchen temperature"
 topic = "sensor/temperature"
 repeat = true # Send all messages to bot
 repeat_only_if_different = true # Repeat only if different from previous value
+    [subscriptions.alarm] # Activate an alarm on this subscription
+    operator = "greater_than" # greater_than, less_than or equal_to
+    value = 20.0 # The alarm is triggered if the value is > 20.0 and a message is sent
 
 [[subscriptions]]
 topic = "binary_sensor/openclose_2"

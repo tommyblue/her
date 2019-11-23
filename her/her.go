@@ -6,9 +6,11 @@ type Message struct {
 }
 
 type SubscriptionConf struct {
+	Label                 string
 	Topic                 string
 	Repeat                bool
 	RepeatOnlyIfDifferent bool `mapstructure:"repeat_only_if_different"`
+	Alarm                 *AlarmConf
 }
 
 type CommandConf struct {
@@ -24,4 +26,9 @@ type IntentConf struct {
 	Room    string
 	Topic   string
 	Message string
+}
+
+type AlarmConf struct {
+	Operator string
+	Value    float64
 }

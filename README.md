@@ -8,11 +8,12 @@ Her is a home assistant.
 * Connect to a Telegram bot
 * Subscribe to MQTT topics and send notifications to Telegram when the value changes
 * Run a server able to receive commands from Alexa
+* Create alarms on MQTT topics. Send messages to bot if an alarm is triggered
 
 ## Config
 
 Create a toml file with your configuration and use it with her.
-You need a valid token to send messages to your [Telegram bot](https://core.telegram.org/bots) and  
+You need a valid token to send messages to your [Telegram bot](https://core.telegram.org/bots) and
 its channel id. To obtain the channel id you can use the instructions provided in this
 [Stackoverflow question](https://stackoverflow.com/questions/33858927/how-to-obtain-the-chat-id-of-a-private-telegram-channel)
 
@@ -21,12 +22,12 @@ it as a template.
 
 ## Alexa integration
 
-Add `[[intents]]` to manage calls from Alexa. Her will listen for POST requests from your custom  
+Add `[[intents]]` to manage calls from Alexa. Her will listen for POST requests from your custom
 Alexa skill and will publish a MQTT message.
 
-In AWS Alexa, create a new custom skill, using JS for the lambda. Use the  
-[alexa-skill-lambda.js](alexa-skill-lambda.js) file to fill in your index.js in the skill (you need)  
-to customize the intents in the js file to match the intents you create in the skill. I used  
+In AWS Alexa, create a new custom skill, using JS for the lambda. Use the
+[alexa-skill-lambda.js](alexa-skill-lambda.js) file to fill in your index.js in the skill (you need)
+to customize the intents in the js file to match the intents you create in the skill. I used
 `SwitchOnTheLight` and `SwitchOffTheLight` that send a POST request with this JSON payload:
 
 ```json
