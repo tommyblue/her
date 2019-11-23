@@ -62,12 +62,10 @@ const SwitchOffTheLightHandler = {
             });
             callHome(data);
         }
-        return (
-            handlerInput.responseBuilder
-                .speak(speakOutput)
-                //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
-                .getResponse()
-        );
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt("Devo fare altro?")
+            .getResponse();
     }
 };
 const SwitchOnTheLightHandler = {
@@ -92,12 +90,10 @@ const SwitchOnTheLightHandler = {
             });
             callHome(data);
         }
-        return (
-            handlerInput.responseBuilder
-                .speak(speakOutput)
-                //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
-                .getResponse()
-        );
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt("Devo fare altro?")
+            .getResponse();
     }
 };
 const LaunchRequestHandler = {
@@ -108,8 +104,7 @@ const LaunchRequestHandler = {
         );
     },
     handle(handlerInput) {
-        const speakOutput =
-            "Welcome, you can say Hello or Help. Which would you like to try?";
+        const speakOutput = "Ciao, cosa vuoi che faccia?";
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -127,7 +122,7 @@ const HelpIntentHandler = {
     },
     handle(handlerInput) {
         const speakOutput =
-            "Puoi usarmi per accendere la luce. Cosa devo accendere?";
+            "Puoi usarmi per accendere o spengere la luce. Cosa devo fare?";
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
