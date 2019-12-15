@@ -56,7 +56,22 @@ func (c *Client) Connect() error {
 	go func() {
 		for msg := range c.inCh {
 			log.Debug("Received: ", msg)
-			if err := c.Publish(msg); err != nil {
+			if msg.Command != "" {
+				switch msg.Command {
+				case "status":
+					statusMessage := ""
+					for _, m := range c.lastMessages {
+						statusMessage = fmt.Sprintf("%s%s: %s\n", statusMessage, c.subscriptions[m.Topic].Label, m.Message)
+					}
+					message := her.Message{
+						Topic:   msg.Command,
+						Message: []byte(statusMessage),
+					}
+					c.outCh <- message
+				default:
+					log.Error("Unknown command", msg.Command)
+				}
+			} else if err := c.Publish(msg); err != nil {
 				log.Error(err)
 			}
 		}
@@ -75,7 +90,7 @@ func (c *Client) Connect() error {
 
 func (c *Client) Subscribe(s her.SubscriptionConf) error {
 	log.Info("Subscribing ", s.Topic, ", repeat: ", s.Repeat, ", repeat_only_if_different: ", s.RepeatOnlyIfDifferent)
-	if token := c.mqttClient.Subscribe(s.Topic, 0, c.MsgCallback); token.Wait() && token.Error() != nil {
+	if token := c.mqttClient.Subscribe(s.Topic, 0, c.msgCallback); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
 	c.subscriptions[s.Topic] = s
@@ -102,7 +117,7 @@ func (c *Client) stop() error {
 	return nil
 }
 
-func (c *Client) MsgCallback(client MQTT.Client, msg MQTT.Message) {
+func (c *Client) msgCallback(client MQTT.Client, msg MQTT.Message) {
 	message := her.Message{
 		Topic:   msg.Topic(),
 		Message: msg.Payload(),

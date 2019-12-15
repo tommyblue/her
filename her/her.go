@@ -3,6 +3,7 @@ package her
 type Message struct {
 	Topic   string
 	Message []byte
+	Command string
 }
 
 type SubscriptionConf struct {
