@@ -2,6 +2,9 @@
 host = "0.0.0.0" # Address used by the HTTP server
 port = 8080 # Port used by the HTTP server
 
+[phoscon]
+token = "<token>" # Phoscon API Token, use phoscon-get-api.sh to generate
+
 [mqtt]
 broker_url = "tcp://test.mosquitto.org:1883"
 

@@ -33,3 +33,8 @@ type AlarmConf struct {
 	Operator string
 	Value    float64
 }
+
+type SensorConf struct {
+	ID    string
+	Value string
+}

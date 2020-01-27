@@ -13,6 +13,7 @@ import (
 	"github.com/tommyblue/her/bot"
 	"github.com/tommyblue/her/her"
 	"github.com/tommyblue/her/mqtt"
+	"github.com/tommyblue/her/phoscon"
 )
 
 // build is the git version of this program. It is set using build flags in the makefile.
@@ -40,6 +41,7 @@ type mainConf struct {
 	shutdownCh        chan os.Signal
 	quitCh            chan bool
 	mqtt              *mqtt.Client
+	phoscon           *phoscon.Server
 	bot               *bot.Bot
 	server            *api.Server
 }
@@ -64,6 +66,7 @@ func run() error {
 	}
 
 	c.initMQTT()
+	c.initPhoscon(viper.GetString("phoscon.token"))
 	c.initBot()
 	c.initServer(viper.GetString("general.host"), viper.GetInt("general.port"))
 	c.manageShutdown()
@@ -104,6 +107,10 @@ func (c *mainConf) initMQTT() {
 		}
 		c.mqtt = m
 	}()
+}
+
+func (c *mainConf) initPhoscon(token string) {
+	c.phoscon = phoscon.New(token)
 }
 
 func (c *mainConf) initBot() {
@@ -157,6 +164,17 @@ func (c *mainConf) runServices() error {
 	}
 	for _, s := range subscriptionConfs {
 		if err := c.mqtt.Subscribe(s); err != nil {
+			log.Error(err)
+			return err
+		}
+	}
+
+	var sensorConfs []her.SensorConf
+	if err := viper.UnmarshalKey("phoscon.sensor", &sensorConfs); err != nil {
+		return err
+	}
+	for _, s := range sensorConfs {
+		if err := c.phoscon.Add(s); err != nil {
 			log.Error(err)
 			return err
 		}
