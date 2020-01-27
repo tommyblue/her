@@ -102,7 +102,7 @@ func (t *TelegramBot) messageReceived(update tgbotapi.Update) {
 		switch update.Message.Command() {
 		case "help":
 			msg.Text = t.printHelp()
-		case "status":
+		case "status", "s":
 			t.bot.outCh <- her.Message{Command: "status"}
 		default:
 			msg.Text = t.checkCommands(update.Message.Command(), update.Message.CommandArguments())
@@ -118,6 +118,7 @@ func (t *TelegramBot) printHelp() string {
 	b.WriteString("Available commands:\n\n")
 	b.WriteString("/help - Get this help\n")
 	b.WriteString("/status - Return subscriptions last known status\n")
+	b.WriteString("/s - Alias for /status\n")
 	for command, conf := range t.commands {
 		b.WriteString(fmt.Sprintf("/%s - %s\n", command, conf.Help))
 	}
