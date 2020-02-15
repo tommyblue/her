@@ -60,8 +60,8 @@ func parseFlags() error {
 	return nil
 }
 
-func loadConfig() error {
-	f, err := os.Open(flag.Arg(0))
+func loadConfig(file string) error {
+	f, err := os.Open(file)
 	if err != nil {
 		return errors.New("Error opening the config file")
 	}

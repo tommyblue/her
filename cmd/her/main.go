@@ -83,7 +83,7 @@ func (c *mainConf) setup() error {
 		return err
 	}
 
-	if err := loadConfig(); err != nil {
+	if err := loadConfig(flag.Arg(0)); err != nil {
 		return err
 	}
 

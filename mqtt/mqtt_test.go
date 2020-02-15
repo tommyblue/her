@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -162,17 +163,22 @@ func TestConnectInCh(t *testing.T) {
 		t.Errorf("Should not return error")
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
 		for msg := range outCh {
 			if !bytes.Equal(msg.Message, []byte(wantMsg)) {
 				t.Errorf("unexpected message %s", msg.Message)
 			}
+			break // exit after the first message
 		}
+		wg.Done()
 	}()
 
 	inCh <- her.Message{
 		Command: "status",
 	}
+	wg.Wait()
 
 	signal.Notify(shutdownCh, os.Interrupt, syscall.SIGTERM)
 }
