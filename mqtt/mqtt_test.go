@@ -82,6 +82,7 @@ func (m mqttClientMock) IsConnectionOpen() bool { return true }
 func (m mqttClientMock) Connect() MQTT.Token {
 	return mqttTokenMock{
 		errorReturn: m.tokenError,
+		doneCh:      make(chan struct{}),
 	}
 }
 func (m mqttClientMock) Disconnect(quiesce uint) {}
@@ -100,11 +101,13 @@ func (m mqttClientMock) OptionsReader() MQTT.ClientOptionsReader             { r
 
 type mqttTokenMock struct {
 	errorReturn error
+	doneCh      chan struct{}
 }
 
 func (t mqttTokenMock) Wait() bool                        { return true }
 func (t mqttTokenMock) WaitTimeout(tm time.Duration) bool { return true }
 func (t mqttTokenMock) Error() error                      { return t.errorReturn }
+func (m mqttTokenMock) Done() <-chan struct{}             { return m.doneCh }
 
 func TestConnect(t *testing.T) {
 	t.Run("Connect Token error", func(t *testing.T) {
