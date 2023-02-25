@@ -11,7 +11,6 @@ require (
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/viper v1.13.0
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804 // indirect
-	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 // indirect
 )
