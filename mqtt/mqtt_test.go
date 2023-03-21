@@ -169,12 +169,11 @@ func TestConnectInCh(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		for msg := range outCh {
-			if !bytes.Equal(msg.Message, []byte(wantMsg)) {
-				t.Errorf("unexpected message %s", msg.Message)
-			}
-			break // exit after the first message
+		msg := <-outCh
+		if !bytes.Equal(msg.Message, []byte(wantMsg)) {
+			t.Errorf("unexpected message %s", msg.Message)
 		}
+
 		wg.Done()
 	}()
 

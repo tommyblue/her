@@ -42,7 +42,7 @@ func NewBot(stopWg *sync.WaitGroup, shutdownCh chan os.Signal, outCh, inCh chan 
 		}
 		bot.bot = telegramBot
 	default:
-		return nil, fmt.Errorf("Unkown bot")
+		return nil, fmt.Errorf("unkown bot")
 	}
 
 	return bot, nil

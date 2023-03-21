@@ -7,7 +7,7 @@ import (
 
 func Test_loadConfig(t *testing.T) {
 	err := loadConfig("unexistent")
-	if err.Error() != fmt.Errorf("Error opening the config file").Error() {
+	if err.Error() != fmt.Errorf("error opening the config file").Error() {
 		t.Error("Expected error")
 	}
 

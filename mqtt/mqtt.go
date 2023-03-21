@@ -150,7 +150,7 @@ func (c *Client) checkAlarm(s her.SubscriptionConf, message her.Message) error {
 	if s.Alarm != nil {
 		v, err := strconv.ParseFloat(string(message.Message), 64)
 		if err != nil {
-			return fmt.Errorf("Cannot convert to int the value %v", message)
+			return fmt.Errorf("cannot convert to int the value %v", message)
 		}
 
 		triggered := false
@@ -161,7 +161,7 @@ func (c *Client) checkAlarm(s her.SubscriptionConf, message her.Message) error {
 		} else if s.Alarm.Operator == "equal_to" {
 			triggered = v == s.Alarm.Value
 		} else {
-			return fmt.Errorf("Unknown operator %s", s.Alarm.Operator)
+			return fmt.Errorf("unknown operator %s", s.Alarm.Operator)
 		}
 
 		if triggered && !bytes.Equal(c.lastAlarms[message.Topic], message.Message) {

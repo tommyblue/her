@@ -22,12 +22,12 @@ type TelegramBot struct {
 func NewTelegramBot(bot *Bot) (*TelegramBot, error) {
 	token := viper.GetString("bot.token")
 	if token == "" {
-		return nil, errors.New("Missing bot token")
+		return nil, errors.New("missing bot token")
 	}
 
 	channelId := viper.GetInt64("bot.channel_id")
 	if channelId == 0 {
-		return nil, errors.New("Missing channel id")
+		return nil, errors.New("missing channel id")
 	}
 
 	return &TelegramBot{
@@ -83,7 +83,7 @@ func (t *TelegramBot) SendMessage(message string) error {
 func (t *TelegramBot) AddCommand(c her.CommandConf) error {
 	_, ok := t.commands[c.Command]
 	if ok {
-		return fmt.Errorf("Command %s already exists", c.Command)
+		return fmt.Errorf("command %s already exists", c.Command)
 	}
 	t.commands[c.Command] = c
 

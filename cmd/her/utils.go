@@ -13,19 +13,19 @@ import (
 
 func validateCommand(command her.CommandConf) error {
 	if command.Help == "" {
-		return fmt.Errorf("Command /%s is missing the help", command.Command)
+		return fmt.Errorf("command /%s is missing the help", command.Command)
 	}
 
 	if command.Command == "" {
-		return fmt.Errorf("Command is empty")
+		return fmt.Errorf("command is empty")
 	}
 
 	if command.Topic == "" {
-		return fmt.Errorf("Command /%s is missing the topic", command.Command)
+		return fmt.Errorf("command /%s is missing the topic", command.Command)
 	}
 
 	if command.Message == "" {
-		return fmt.Errorf("Command /%s is missing the message", command.Command)
+		return fmt.Errorf("command /%s is missing the message", command.Command)
 	}
 
 	return nil
@@ -54,7 +54,7 @@ func parseFlags() error {
 
 	if len(flag.Args()) < 1 {
 		flag.Usage()
-		return errors.New("Too few arguments")
+		return errors.New("too few arguments")
 	}
 
 	return nil
@@ -63,7 +63,7 @@ func parseFlags() error {
 func loadConfig(file string) error {
 	f, err := os.Open(file)
 	if err != nil {
-		return errors.New("Error opening the config file")
+		return errors.New("error opening the config file")
 	}
 
 	viper.SetConfigType("toml")
