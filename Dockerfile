@@ -26,7 +26,7 @@ RUN go build -mod=readonly -ldflags "-X main.build=${VCS_REF}"
 
 
 # Run the Go Binary in Alpine.
-FROM alpine:3.7
+FROM alpine:3.18.6
 ARG BUILD_DATE
 ARG VCS_REF
 ARG PACKAGE_NAME
